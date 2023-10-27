@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace WpfApp1
 {
@@ -20,11 +21,29 @@ namespace WpfApp1
     /// </summary>
     public partial class MainWindow : Window
     {
+        DispatcherTimer timer = new DispatcherTimer();
+        int tenthsOfSecondsElapsed;
+        int matchesFound;
         public MainWindow()
         {
             InitializeComponent();
+            timer.Interval = TimeSpan.FromSeconds(.1);
+            timer.Tick += Timer_Tick;
             SetUpGame();
         }
+
+        private void Timer_Tick(object slender, EventArgs e) // MAKE SURE YOU SPELL EVERYTHING RIGHT ADD CAPS TO THE START OF EVERYTHING
+        {
+            tenthsOfSecondsElapsed++;
+            timerTextBlock.Text = (tenthsOfSecondsElapsed / 10F).ToString(".s");
+            // if all 8 Emojis are got stops timer sends timer text and the measage - play again
+            if (matchesFound == 8)
+            {
+                timer.Stop();
+                timerTextBlock.Text += " - play again?";
+            }
+        }
+
 
         private void SetUpGame()
         {
@@ -41,11 +60,49 @@ namespace WpfApp1
             // foreach (TextBlock emoji in animalEmoji)
             foreach (TextBlock textBlock in mainGrid.Children.OfType<TextBlock>())
             {
-                int index = random.Next(animalEmoji.Count);
-                string nextEmoji = animalEmoji[index];
-                textBlock.Text = nextEmoji;
-                animalEmoji.RemoveAt(index);
+                if (textBlock.Name != "timerTextBlock")
+                {
+                    textBlock.Visibility = Visibility.Visible;
+                    int index = random.Next(animalEmoji.Count);
+                    string nextEmoji = animalEmoji[index];
+                    textBlock.Text = nextEmoji;
+                    animalEmoji.RemoveAt(index);
+                }
+            }
+            timer.Start();
+            tenthsOfSecondsElapsed = 0;
+            matchesFound = 0;
+        }
+        TextBlock lastTextBlockClicked;
+        bool findingMatch = false;
+        private void TextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            TextBlock textBlock = sender as TextBlock;
+            if (findingMatch == false)
+            {
+                textBlock.Visibility = Visibility.Hidden;
+                lastTextBlockClicked = textBlock;
+                findingMatch = true;
+            }
+            else if (textBlock.Text == lastTextBlockClicked.Text)
+            {
+                matchesFound++;
+                textBlock.Visibility = Visibility.Hidden;
+                findingMatch = false;
+            }
+            else
+            {
+                lastTextBlockClicked.Visibility = Visibility.Visible;
+                findingMatch = false;
+            }
+        }
+
+        private void TimeTextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        {// if matchesfound restart game
+            if (matchesFound == 8)
+            {
+                SetUpGame();
             }
         }
     }
-}
+    }
